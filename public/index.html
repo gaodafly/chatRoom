@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聊天室</title>
+    <link rel="stylesheet" href="/css/index.css">
+</head>
+
+<body>
+    <div class="login">
+        <div class="login-box">
+            <div>
+                <h2>淀山湖群聊</h2>
+            </div>
+            <div class="name">
+                <label for="">
+                    Name：<input class="myName" type="text"><br>
+                </label>
+
+            </div>
+            <div> <button id="enterBtn">login in...</button></div>
+        </div>
+
+    </div>
+    <div class="lt-container">
+        <div class="left">
+            <div class="left-self">
+                <p>
+                    <h4>My Name：</h4>
+                </p>
+                <p class="selft">自己的名字</p>
+            </div>
+
+            <p class="left-allUser">
+                <h4>用户列表：</h4>
+                <ul class="allList">
+                    <li>???</li>
+
+                </ul>
+            </p>
+
+        </div>
+        <div class="right">
+            <h1>淀山湖聊天室</h1>
+            <!-- 显示聊天内容的地方 -->
+
+            <div class="main-msg">
+                <!-- 自己的消息 -->
+                <div class="myContent">
+                    <div class="author">我是自己信息收到回复给对手犯规山东分公士大夫公司股东分红喝咖啡是 </div>
+                    <div class="myMes">胖虎</div>
+                </div>
+                <!-- 其他用户的信息 -->
+                <div class="authorContent">
+                    <div class="myMes">小夫</div>
+                    <div class="author">其他用户说了啥</div>
+
+                </div>
+
+            </div>
+            <!-- 输入信息的框 -->
+            <div class="inText">
+                <div>
+                    <button class="fs">发送</button>
+                </div>
+
+                <textarea class="text-con" cols="30" rows="10"></textarea>
+            </div>
+
+
+        </div>
+
+    </div>
+    <!-- 引入socketio -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // 聊天的主要功能
+        // 链接socketio服务  参数为：服务器地址
+        const socket = io("http://localhost:3000");
+
+
+        // 获取元素
+        // 登录遮罩层
+        let loginMasker = document.querySelector('.login')
+            // 在登录遮罩层输入姓名的input输入框
+        let myName = document.querySelector('.myName')
+            // 展示聊天内容的div
+        let right = document.querySelector('.main-msg')
+            // 当前用户姓名的地方
+        let self = document.querySelector('.left-self .selft')
+            // 在聊天室的展示所有用户列表的ul标签
+        let allList = document.querySelector('.allList');
+        let fs = document.querySelector('.fs');
+        // 发送内容的文本框
+        let textCon = document.querySelector('.text-con')
+
+        let enterBtn = document.querySelector('#enterBtn')
+
+
+        let selfData;
+        enterBtn.addEventListener('click', () => {
+            selfData = {
+                name: myName.value
+            }
+            socket.emit('enterTo', selfData)
+        })
+
+        //有相同名字提示
+        socket.on('enterErr', (data) => {
+            alert(data)
+        })
+
+        // 登录成功
+        socket.on('enterinner', (data) => {
+            loginMasker.style.display = 'none';
+            let p = document.createElement('p');
+            p.className = 'xitong';
+            self.innerHTML = `${data.name}`
+            p.innerHTML = `${data.name}进入群聊`
+            right.appendChild(p)
+        })
+
+        socket.on('userList', (data) => {
+            // console.log(data)
+            allList.innerHTML = '';
+            // [{name:www},{name:qqq}]
+            data.forEach(item => {
+                let li = document.createElement('li');
+                li.innerHTML = `${item.name}`
+                allList.appendChild(li)
+
+            });
+        })
+        socket.on('leave', (data) => {
+            console.log(data)
+            let p = document.createElement('p');
+            p.className = 'xitong';
+            self.innerHTML = `${data.name}`
+            p.innerHTML = `${data.name}退出群聊`
+            right.appendChild(p)
+        })
+
+        fs.addEventListener('click', () => {
+            selfData.msg = textCon.value
+            socket.emit('message', selfData)
+            textCon.value = '';
+        })
+
+        socket.on('msg', (data) => {
+            if (selfData.name == data.name) {
+                let div = document.createElement('div');
+                div.className = 'myContent';
+                div.innerHTML = ` <div class="author">${data.msg}</div>
+                    <div class="myMes">${data.name}</div>`
+                right.appendChild(div)
+            } else {
+                let div = document.createElement('div');
+                div.className = 'authorContent';
+                div.innerHTML = ` <div class="myMes">${data.name}</div>
+                    <div class="author">${data.msg}</div>`
+                right.appendChild(div)
+            }
+
+        })
+    </script>
+</body>
+
+</html>
